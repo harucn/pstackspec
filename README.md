@@ -1,6 +1,6 @@
 # pstackspec
 
-OpenSpec の custom schema。組み込みの `spec-driven` に [pstack](https://github.com/cursor/plugins/tree/main/pstack) の skill を差し込む。[superspec](https://github.com/danielhanold/superspec) が Superpowers で行っていることを pstack で行う。
+OpenSpec の custom schema。組み込みの `spec-driven` に [pstack](https://github.com/cursor/plugins/tree/main/pstack) の skill を差し込む。
 
 proposal・specs・design・tasks の書式は実行時に `openspec instructions <id> --schema spec-driven` から取るので、`spec-driven` の instruction を書き写していない。OpenSpec を更新すれば書式の変更にも追従する。
 
@@ -23,16 +23,6 @@ sharpen ──→ proposal ──→ specs ──→ tasks ──→ apply ─�
 | verify | `blast-radius`、争点が残る場合だけ `interrogate` | `verify.md`: Scenario ごとの対応コード、PASS / FAIL | FAIL なら archive しない |
 
 apply では subagent（`pstack:poteto-agent`）がコードを書き、本体が差分を読んで検証コマンドを通してから checkbox を付ける。
-
-## superspec との違い
-
-| | superspec | pstackspec |
-| --- | --- | --- |
-| 最初の段 | brainstorm（`superpowers:brainstorming`） | sharpen（`sharpen` + `how`） |
-| 実装計画 | `plan.md`（`superpowers:writing-plans`） | なし。tasks.md を検証可能な単位まで細かくする |
-| apply | git worktree + subagent-driven-development | 同じ作業ツリーで subagent が実装 |
-| 最後の段 | finalize（worktree の merge、push、PR コメント） | verify まで。push と PR は手動 |
-| spec-driven の instruction | schema に書き写している | 実行時に読む |
 
 ## 前提
 
@@ -100,4 +90,4 @@ openspec/schemas/pstackspec/
 
 ## License
 
-`templates/` の proposal・spec・design・tasks は OpenSpec の `spec-driven` から複製した（MIT、`openspec/schemas/pstackspec/LICENSE.openspec`）。
+MIT（[LICENSE](LICENSE)）。`templates/` の proposal・spec・design・tasks は OpenSpec の `spec-driven` から複製した（MIT、`openspec/schemas/pstackspec/LICENSE.openspec`）。
