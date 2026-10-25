@@ -1,0 +1,116 @@
+name: pstackspec
+version: 1
+description: >
+  A workflow that layers pstack skills on top of spec-driven.
+  sharpen → proposal → specs / design → tasks → apply → verify.
+  Proposal, specs, design, and tasks follow the built-in spec-driven instructions;
+  this schema only adds the pstack steps.
+
+# pstack skills can't be invoked through the Skill tool. Read them as described in "Reading pstack" in the sharpen instruction.
+artifacts:
+  - id: sharpen
+    generates: sharpen.md
+    description: A sharpened version of the request and the current state of the affected subsystems
+    template: sharpen.md
+    instruction: |
+      Reading pstack: take the `installPath` of `pstack@cursor-plugins` in
+      `~/.claude/plugins/installed_plugins.json` as `<pstack>`, then Read and follow
+      `<pstack>/skills/<name>/SKILL.md`. If you haven't read it yet this session, read
+      `<pstack>/docs/harness/claude-code.md` first. If pstack is not in `installed_plugins.json`,
+      tell the user to install pstack and stop.
+
+      1. Apply `sharpen` to the request. Show the rewritten request to the user and get their
+         approval before moving on.
+      2. Apply `how` to the affected subsystems.
+      3. Write the approved request and the `how` findings following the template. Cite the
+         current code as file:line.
+    requires: []
+
+  - id: proposal
+    generates: proposal.md
+    description: Why the change is needed and what it covers
+    template: proposal.md
+    instruction: |
+      Follow the `instruction` from
+      `openspec instructions proposal --change "<name>" --schema spec-driven --json`.
+      In addition: start Why and What Changes from Sharpened in sharpen.md, and reflect
+      Done Means in Impact.
+    requires:
+      - sharpen
+
+  - id: specs
+    generates: "specs/**/*.md"
+    description: Delta specs
+    template: spec.md
+    instruction: |
+      Follow the `instruction` from
+      `openspec instructions specs --change "<name>" --schema spec-driven --json`.
+      In addition: make each Scenario granular enough to become the name of a test written in apply.
+    requires:
+      - proposal
+
+  - id: design
+    generates: design.md
+    description: Types, signatures, and module boundaries
+    template: design.md
+    instruction: |
+      Follow the `instruction` from
+      `openspec instructions design --change "<name>" --schema spec-driven --json`.
+      This artifact is conditional ("create only if"); whether to create it also follows the
+      spec-driven instruction.
+
+      If you create it, generate options with Phases A–C of pstack's `architect` (see "Reading
+      pstack" in the sharpen instruction). Phase D onward happens in apply.
+      In Decisions, write the caller-side usage, a sketch of the chosen types, and the rejected
+      alternatives with the reason for each. Name the data shapes first, following pstack's
+      `principle-model-the-domain`.
+    requires:
+      - proposal
+
+  - id: tasks
+    generates: tasks.md
+    description: An implementation checklist split into verifiable units
+    template: tasks.md
+    instruction: |
+      Follow the `instruction` from
+      `openspec instructions tasks --change "<name>" --schema spec-driven --json`.
+      In addition: following pstack's `principle-sequence-verifiable-units`, make each task a unit
+      that closes build → verify → commit. Give each task a verification command.
+      When done, apply pstack's `interrogate` to proposal, specs, design, and tasks, and apply
+      its Act On items before marking this artifact complete.
+    requires:
+      - specs
+      - design
+
+  - id: verify
+    generates: verify.md
+    description: Whether the change meets the specs, and where it could break things
+    template: verify.md
+    instruction: |
+      If tasks.md still has unchecked boxes, stop without writing and point the user to `/opsx:apply`.
+
+      1. For each Requirement / Scenario in the delta specs, find the code and tests that satisfy it.
+         Mark anything missing, or without a test, as CRITICAL.
+      2. Run `openspec validate "<name>"`.
+      3. Apply pstack's `blast-radius` to the diff (see "Reading pstack" in the sharpen instruction).
+         Back each fact you claim is safe with something you ran. If you can't, write unproven.
+      4. Apply `interrogate` only if design questions remain open. Don't fix anything automatically.
+      Set Result to PASS only when there are zero CRITICAL items. Don't archive unless it is PASS.
+    requires:
+      - tasks
+
+apply:
+  requires: [tasks]
+  tracks: tasks.md
+  instruction: |
+    Implement the tasks in order with pstack's `poteto-mode` feature playbook (the refactoring
+    playbook if the change is purely structural). See "Reading pstack" in the sharpen instruction.
+
+    - Have a subagent (`pstack:poteto-agent`) write the code. Put the task, the related
+      Requirements / Scenarios, the type sketch from design.md, and the verification command in the brief.
+    - Read the diff yourself and run the task's verification command. Only after it passes,
+      check the box and commit.
+    - For each decision, append one row to `<changeDir>/decisions.tsv` in pstack's
+      `show-me-your-work` format. Whether to commit it follows "Where it lives" in `show-me-your-work`.
+    - Do the playbook's "Opening a PR" step only when the user asks.
+    - When every task is done, tell the user to run `/opsx:continue` to move on to verify.
