@@ -43,7 +43,7 @@ apply では subagent（`pstack:poteto-agent`）がコードを書き、本体�
 ## インストール
 
 ```bash
-git clone <this-repo> ~/Development/pstackspec
+git clone https://github.com/harucn/pstackspec.git ~/Development/pstackspec
 cd ~/Development/pstackspec
 ```
 
