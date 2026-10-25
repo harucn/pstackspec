@@ -1,0 +1,110 @@
+name: pstackspec
+version: 1
+description: >
+  spec-driven に pstack の skill を差し込んだ workflow。
+  sharpen → proposal → specs / design → tasks → apply → verify。
+  proposal・specs・design・tasks の書式は組み込みの spec-driven の instruction に従い、
+  pstack の手順だけを上乗せする。
+
+# pstack の skill は Skill tool では呼べない。各 instruction の「pstack の読み方」に従って Read する。
+artifacts:
+  - id: sharpen
+    generates: sharpen.md
+    description: 要望を深めた版と、影響するサブシステムの現状
+    template: sharpen.md
+    instruction: |
+      pstack の読み方: `~/.claude/plugins/installed_plugins.json` の `pstack@cursor-plugins` の
+      `installPath` を `<pstack>` とし、`<pstack>/skills/<name>/SKILL.md` を Read して従う。
+      このセッションで未読なら先に `<pstack>/docs/harness/claude-code.md` を読む。
+      `installed_plugins.json` に pstack が無ければ、pstack を入れるよう伝えて止まる。
+
+      1. `sharpen` を要望に適用する。書き換えた要望をユーザーに見せ、合意を得てから次へ進む。
+      2. `how` を影響するサブシステムに適用する。
+      3. 合意した要望と `how` の結果を template に沿って書く。現状は file:line で示す。
+      プロジェクトの既存 artifact と同じ言語で書く。
+    requires: []
+
+  - id: proposal
+    generates: proposal.md
+    description: 変更の理由と範囲
+    template: proposal.md
+    instruction: |
+      `openspec instructions proposal --change "<name>" --schema spec-driven --json` の
+      `instruction` に従って書く。
+      追加: sharpen.md の Sharpened を Why と What Changes の出発点にし、Done Means を Impact に反映する。
+    requires:
+      - sharpen
+
+  - id: specs
+    generates: "specs/**/*.md"
+    description: delta spec
+    template: spec.md
+    instruction: |
+      `openspec instructions specs --change "<name>" --schema spec-driven --json` の
+      `instruction` に従って書く。
+      追加: 各 Scenario は、apply で書くテストの名前になる粒度にする。
+    requires:
+      - proposal
+
+  - id: design
+    generates: design.md
+    description: 型・シグネチャ・モジュール境界の設計
+    template: design.md
+    instruction: |
+      `openspec instructions design --change "<name>" --schema spec-driven --json` の
+      `instruction` に従う。この artifact は条件付き（create only if）で、作るかどうかの条件も
+      spec-driven の instruction に従う。
+
+      作る場合は pstack の `architect` の Phase A〜C で案を出す（pstack の読み方は sharpen の
+      instruction を参照）。Phase D 以降は apply で行う。
+      Decisions には呼び出し側の使い方、選んだ型の sketch、却下した案とその理由を書く。
+      データの形は pstack の `principle-model-the-domain` に沿って先に名前を付ける。
+    requires:
+      - proposal
+
+  - id: tasks
+    generates: tasks.md
+    description: 検証可能な単位に分けた実装 checklist
+    template: tasks.md
+    instruction: |
+      `openspec instructions tasks --change "<name>" --schema spec-driven --json` の
+      `instruction` に従って書く。
+      追加: pstack の `principle-sequence-verifiable-units` に従い、1 task を
+      「作る → 検証する → commit する」が閉じる単位にする。各 task に検証コマンドを書く。
+      書き終えたら pstack の `interrogate` を proposal・specs・design・tasks に適用し、
+      Act On を反映してから完了とする。
+    requires:
+      - specs
+      - design
+
+  - id: verify
+    generates: verify.md
+    description: spec を満たしているかと、変更が壊しうる場所の確認
+    template: verify.md
+    instruction: |
+      tasks.md に未完了の checkbox が残っていれば書かずに止まり、`/opsx:apply` を案内する。
+
+      1. delta spec の Requirement / Scenario ごとに、満たしているコードとテストを探す。
+         見つからないもの、テストが無いものは CRITICAL にする。
+      2. `openspec validate "<name>"` を実行する。
+      3. pstack の `blast-radius` を差分に適用する（pstack の読み方は sharpen の instruction を参照）。
+         安全と言える事実は実行した結果で示す。示せなければ unproven と書く。
+      4. design に争点が残っている場合だけ `interrogate` を適用する。自動では修正しない。
+      Result は CRITICAL が 0 件のときだけ PASS にする。PASS でなければ archive しない。
+    requires:
+      - tasks
+
+apply:
+  requires: [tasks]
+  tracks: tasks.md
+  instruction: |
+    pstack の `poteto-mode` の feature playbook（構造だけの変更なら refactoring playbook）で
+    task を順に実装する。pstack の読み方は sharpen の instruction を参照。
+
+    - コードは subagent（`pstack:poteto-agent`）に書かせる。brief には task、関係する
+      Requirement / Scenario、design.md の型の sketch、検証コマンドを入れる。
+    - 本体は差分を読み、task の検証コマンドを実行する。通ってから checkbox を更新し、commit する。
+    - 判断ごとに pstack の `show-me-your-work` の形式で `<changeDir>/decisions.tsv` に 1 行残す。
+      commit するかは `show-me-your-work` の Where it lives に従う。
+    - playbook の Opening a PR はユーザーに頼まれたときだけ行う。
+    - 全 task が終わったら `/opsx:continue` で verify へ進むよう案内する。
