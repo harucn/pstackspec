@@ -61,6 +61,8 @@ openspec schema which pstackspec
 ## 注意
 
 - user レベルで入れた場合、`pstackspec` で作った change は schema を持っていない人の環境では `openspec status` が解決できない。チームのリポジトリで使い続けるならリポジトリに入れる。
+- verify が FAIL のときに archive を止めるのは instruction の指示だけで、CLI は止めない。`/opsx:archive` は `verify.md` が無ければ警告して確認を求めるが、FAIL と書かれた `verify.md` があれば警告しない。
+- apply の判断ログ `decisions.tsv` は change ディレクトリに置かれる。commit しないなら `.gitignore` に `openspec/changes/**/decisions.tsv` を足す。
 - pstack の skill は Skill tool では呼べないため、instruction は `~/.claude/plugins/installed_plugins.json` から pstack の場所を解決して `SKILL.md` を Read させている。
 
 ## License
