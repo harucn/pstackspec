@@ -43,14 +43,14 @@ This copies the schema into `openspec/schemas/pstackspec/` and makes it the defa
 To go one step at a time:
 
 ```text
-/opsx:new my-feature
-/opsx:continue   # one artifact per run: sharpen → proposal → specs → design → tasks
-/opsx:apply
-/opsx:continue   # creates verify.md
-/opsx:archive
+/openspec-new-change my-feature
+/openspec-continue-change   # one artifact per run: sharpen → proposal → specs → design → tasks
+/openspec-apply-change
+/openspec-continue-change   # creates verify.md
+/openspec-archive-change
 ```
 
-`/opsx:ff` and `/opsx:propose` create everything from sharpen to tasks in one go, pausing only for your approval at sharpen. They stop before verify, so run `/opsx:continue` after apply to create it.
+`/openspec-ff-change` and `/openspec-propose` create everything from sharpen to tasks in one go, pausing only for your approval at sharpen. They stop before verify, so run `/openspec-continue-change` after apply to create it.
 
 ## Workflow
 

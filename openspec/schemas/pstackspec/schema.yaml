@@ -87,7 +87,7 @@ artifacts:
     description: Whether the change meets the specs, and where it could break things
     template: verify.md
     instruction: |
-      If tasks.md still has unchecked boxes, stop without writing and point the user to `/opsx:apply`.
+      If tasks.md still has unchecked boxes, stop without writing and point the user to `/openspec-apply-change`.
 
       1. For each Requirement / Scenario in the delta specs, find the code and tests that satisfy it.
          Mark anything missing, or without a test, as CRITICAL.
@@ -113,4 +113,4 @@ apply:
     - For each decision, append one row to `<changeDir>/decisions.tsv` in pstack's
       `show-me-your-work` format. Whether to commit it follows "Where it lives" in `show-me-your-work`.
     - Do the playbook's "Opening a PR" step only when the user asks.
-    - When every task is done, tell the user to run `/opsx:continue` to move on to verify.
+    - When every task is done, tell the user to run `/openspec-continue-change` to move on to verify.
